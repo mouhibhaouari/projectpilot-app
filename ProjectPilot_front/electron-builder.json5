@@ -1,0 +1,35 @@
+// @see - https://www.electron.build/configuration/configuration
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "com.billelz.projectpilot",
+  "asar": true,
+  "productName": "ProjectPilot",
+  "directories": {
+    "output": "release/${version}"
+  },
+  "files": [
+    "dist",
+    "dist-electron"
+  ],
+  "mac": {
+    "target": ["dmg"],
+    "artifactName": "${productName}-Mac-${version}-Installer.${ext}",
+    "extraResources": [{ "from": "backend/linux", "to": "backend" }]
+  },
+  "win": {
+    "target": [{ "target": "nsis", "arch": ["x64"] }],
+    "artifactName": "${productName}-Windows-${version}-Setup.${ext}",
+    "extraResources": [{ "from": "backend/windows", "to": "backend" }]
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "deleteAppDataOnUninstall": false
+  },
+  "linux": {
+    "target": ["AppImage"],
+    "artifactName": "${productName}-Linux-${version}.${ext}",
+    "extraResources": [{ "from": "backend/linux", "to": "backend" }]
+  }
+}
