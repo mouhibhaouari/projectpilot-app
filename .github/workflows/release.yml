@@ -30,7 +30,19 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install pyinstaller
-          pyinstaller --onefile --name projectpilot-backend main.py
+          pyinstaller --onefile --name projectpilot-backend \
+            --collect-all uvicorn \
+            --collect-all websockets \
+            --hidden-import uvicorn.logging \
+            --hidden-import uvicorn.loops \
+            --hidden-import uvicorn.loops.asyncio \
+            --hidden-import uvicorn.protocols \
+            --hidden-import uvicorn.protocols.http \
+            --hidden-import uvicorn.protocols.http.h11_impl \
+            --hidden-import uvicorn.protocols.websockets \
+            --hidden-import uvicorn.protocols.websockets.websockets_impl \
+            --hidden-import uvicorn.lifespan.on \
+            main.py
 
       - name: Stage backend binary
         run: |
@@ -81,7 +93,19 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install pyinstaller
-          pyinstaller --onefile --name projectpilot-backend main.py
+          pyinstaller --onefile --name projectpilot-backend `
+            --collect-all uvicorn `
+            --collect-all websockets `
+            --hidden-import uvicorn.logging `
+            --hidden-import uvicorn.loops `
+            --hidden-import uvicorn.loops.asyncio `
+            --hidden-import uvicorn.protocols `
+            --hidden-import uvicorn.protocols.http `
+            --hidden-import uvicorn.protocols.http.h11_impl `
+            --hidden-import uvicorn.protocols.websockets `
+            --hidden-import uvicorn.protocols.websockets.websockets_impl `
+            --hidden-import uvicorn.lifespan.on `
+            main.py
 
       - name: Stage backend binary
         shell: bash

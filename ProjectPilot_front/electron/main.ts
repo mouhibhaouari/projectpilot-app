@@ -79,6 +79,24 @@ function stopBackend() {
     backendProcess = null;
   }
 }
+
+// Poll /health until the backend is up (max 30 s)
+function waitForBackend(retries = 60, delayMs = 500): Promise<void> {
+  return new Promise((resolve, reject) => {
+    let attempts = 0;
+    const check = () => {
+      fetch('http://127.0.0.1:8000/health')
+        .then(r => r.ok ? resolve() : retry())
+        .catch(() => retry());
+    };
+    const retry = () => {
+      attempts++;
+      if (attempts >= retries) return reject(new Error('Backend did not start in time'));
+      setTimeout(check, delayMs);
+    };
+    check();
+  });
+}
 function createWindow() {
   win = new BrowserWindow({
     width: 1400,        
@@ -252,27 +270,25 @@ app.on('activate', () => {
 
 app.whenReady().then(() => {
   startBackend()
+  waitForBackend().catch(err => console.error('[backend]', err.message))
   createWindow()
 })
 
 ipcMain.handle('analyze-project', async (_event, path: string) => {
-  try {
-    const response = await fetch('http://127.0.0.1:8000/analyze', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ path: path }),
-    });
+  // Wait for backend to be ready (handles race on packaged startup)
+  await waitForBackend(60, 500).catch(() => {
+    throw new Error('Backend is not reachable. Please restart the app.')
+  })
 
-    if (!response.ok) {
-      throw new Error(`API error: ${response.statusText}`);
-    }
+  const response = await fetch('http://127.0.0.1:8000/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path }),
+  })
 
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error calling API:', error);
-    throw error;
+  if (!response.ok) {
+    throw new Error(`API error: ${response.statusText}`)
   }
-});
+
+  return response.json()
+})
