@@ -4,8 +4,11 @@ from project_analyzer.models import ProjectInfo
 from .utils import get_system_info,safe_parse_ai_json, detect_compose_command,docker_exists,order_compose_files,extract_ports_from_compose
 from typing import Dict, Any, List
 from mcp.core import run_agent
-import uuid
-groq_api_key = "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"
+from dotenv import load_dotenv
+import os
+load_dotenv()
+groq_api_key = os.getenv("GROQ_API_KEY")
+ 
 client = Groq(api_key=groq_api_key)
 user_os = get_system_info()
 def readme_install_guide(info: ProjectInfo,mcp_client) -> Dict[str, Any]:
