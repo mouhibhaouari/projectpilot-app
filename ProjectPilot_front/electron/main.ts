@@ -113,6 +113,7 @@ function createWindow() {
   Menu.setApplicationMenu(null)
   win.webContents.on('did-finish-load', () => {
     win?.show()  
+    win?.maximize()
     win?.webContents.send('main-process-message', (new Date).toLocaleString())
   })
 
@@ -158,7 +159,7 @@ ipcMain.on('terminal:resize', (_event, size) => {
 });
 
 // Helper function to get clean stderr for error reporting
-const getCommandStderr = (command: string): Promise<string> => {
+const getCommandStderr = (command: string, cwd: string): Promise<string> => {
   return new Promise((resolve) => {
     const shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
     const args = os.platform() === 'win32' ? ['-Command', command] : ['-c', command];
@@ -166,6 +167,7 @@ const getCommandStderr = (command: string): Promise<string> => {
     let stderrData = '';
     
     execFile(shell, args, {
+      cwd: cwd,
       maxBuffer: 1024 * 1024,  // 1MB buffer
       timeout: 60000,  // 60 second timeout
     }, (error, _stdout, stderr) => {
@@ -174,10 +176,11 @@ const getCommandStderr = (command: string): Promise<string> => {
     });
   });
 };
-
-ipcMain.on('execute-command', (_event, command) => {
+ipcMain.on('execute-command', (_event, command, projectPath) => {
   if (!command?.trim()) return;
-  
+
+  const cwd = projectPath || os.homedir();
+
   const jobPty = pty.spawn(
     os.platform() === 'win32' ? 'powershell.exe' : 'bash',
     os.platform() === 'win32' ? ['-Command', command] : ['-c', command],
@@ -185,7 +188,7 @@ ipcMain.on('execute-command', (_event, command) => {
       name: 'xterm-color',
       cols: 80,
       rows: 30,
-      cwd: os.homedir(),
+      cwd: cwd,
       env: process.env as NodeJS.ProcessEnv
     }
   );
@@ -196,7 +199,7 @@ ipcMain.on('execute-command', (_event, command) => {
   
   jobPty.onExit(async ({ exitCode, signal }) => {
   if (exitCode !== 0) {
-    const errorOutput = await getCommandStderr(command);
+    const errorOutput = await getCommandStderr(command, cwd);
     
     win?.webContents.send('automation-error', { 
       exitCode, 
@@ -209,7 +212,7 @@ ipcMain.on('execute-command', (_event, command) => {
   jobPty.kill();
   ptyProcess?.write('\r'); 
 });
-});
+}); 
 ipcMain.on('run-stop-command', (_event, command) => {
   if (!command?.trim()) return;
 
@@ -275,7 +278,6 @@ app.whenReady().then(() => {
 })
 
 ipcMain.handle('analyze-project', async (_event, path: string) => {
-  // Wait for backend to be ready (handles race on packaged startup)
   await waitForBackend(60, 500).catch(() => {
     throw new Error('Backend is not reachable. Please restart the app.')
   })

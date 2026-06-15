@@ -218,7 +218,7 @@ showNextCommand() {
 },
 handleCommandConfirm() {
   this.showCommandModal = false;  
-  window.ipcRenderer.send('execute-command', this.pendingCommand);
+  window.ipcRenderer.send('execute-command', this.pendingCommand, this.store.selectedFolder);
 },
 handleCommandDeny() {
   this.terminal.writeln(`\x1b[31m✗ Permission Denied:\x1b[0m ${this.pendingCommand}`);

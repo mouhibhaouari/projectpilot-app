@@ -43,15 +43,14 @@ export default {
       }
     },
     stopProject() {
-      const stopCommand =
-        this.store.analysisResult?.install?.result?.stop_command;
-      if (!stopCommand) {
-        console.warn('No stop command available');
-        return;
-      }
-      window.ipcRenderer.send('run-stop-command', stopCommand);
-      this.store.setStatus('idle');
-    }
+  const stopCommand = this.store.analysisResult?.install?.result?.stop_command;
+  if (stopCommand) {
+    window.ipcRenderer.send('run-stop-command', stopCommand);
+  } else {
+    window.ipcRenderer.send('run-stop-command', '\x03');
+  }
+  this.store.setStatus('idle');
+}
   },
   computed: {
     isRunning() {
