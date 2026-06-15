@@ -28,7 +28,7 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 
 let win: BrowserWindow | null
 let ptyProcess: pty.IPty | null = null;
 let backendProcess: ChildProcess | null = null;
-
+let jobPty: pty.IPty | null = null;
 function startBackend() {
   const isPackaged = app.isPackaged;
 
@@ -181,7 +181,7 @@ ipcMain.on('execute-command', (_event, command, projectPath) => {
 
   const cwd = projectPath || os.homedir();
 
-  const jobPty = pty.spawn(
+    jobPty = pty.spawn(
     os.platform() === 'win32' ? 'powershell.exe' : 'bash',
     os.platform() === 'win32' ? ['-Command', command] : ['-c', command],
     {
@@ -209,25 +209,20 @@ ipcMain.on('execute-command', (_event, command, projectPath) => {
   } else {
     win?.webContents.send('command-done');
   }
-  jobPty.kill();
+
+  jobPty?.kill();
   ptyProcess?.write('\r'); 
 });
 }); 
-ipcMain.on('run-stop-command', (_event, command) => {
-  if (!command?.trim()) return;
-
-  if (!ptyProcess) {
-    win?.webContents.send(
-      'terminal:data',
-      '\r\n\x1b[31m[Error]\x1b[0m No active terminal session\r\n'
-    );
+ipcMain.on('run-stop-command', (_event, stopCommand) => {
+  if (stopCommand && typeof stopCommand === 'string') {
+    ptyProcess?.write(stopCommand + '\r');
     return;
   }
-  ptyProcess.write(command + '\r');
-  win?.webContents.send(
-    'terminal:data',
-    `\r\n\x1b[33m[Executing Stop Command]\x1b[0m ${command}\r\n`
-  );
+  if (jobPty) {
+    jobPty.kill();
+    jobPty = null;
+  }
 });
 ipcMain.on('terminal:show-prompt', () => {
   ptyProcess?.write('\r');
