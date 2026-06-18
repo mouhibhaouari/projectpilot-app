@@ -38,13 +38,11 @@ function startBackend() {
   let backendCwd: string;
 
   if (isPackaged) {
-    // In production: look for the bundled backend binary in resources/
     const platform = os.platform();
     const binaryName = platform === 'win32' ? 'projectpilot-backend.exe' : 'projectpilot-backend';
     backendExecutable = path.join(process.resourcesPath, 'backend', binaryName);
     backendCwd = path.join(process.resourcesPath, 'backend');
   } else {
-    // In development: use the venv Python so uvicorn and deps are available
     backendCwd = path.join(process.env.APP_ROOT!, '..', 'ProjectPilot');
     const isWin = os.platform() === 'win32';
     const venvPython = isWin
